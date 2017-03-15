@@ -31,7 +31,8 @@ const uint8_t PIN_NRF_CS = D10;
 const uint8_t PIN_NRF_PKT = D2;
 
 
-bool writer;
+bool rem_key_hold;
+uint8_t rem_group_act;
 int lastCounter;
 uint16_t RemContr_Add;
 uint8_t LearnCnt;
@@ -107,6 +108,7 @@ void setup_wifi()
   delay(1000);
   client.setServer(mqtt_server.c_str(), 1883);
   client.setCallback(callback);
+
 
 }
 
@@ -199,7 +201,20 @@ void ParseRemoteComm(uint8_t buf[])
     }  else LearnCnt = 0;
     if (LastRemAdd == RemContr_Add)
     {
-      int actComm = buf[4] % 16;
+
+      String Raw = String(buf[1],HEX) + " " + String(buf[2],HEX) + " " + String(buf[3],HEX) + " " + String(buf[4],HEX) + " " + String(buf[5],HEX);
+      client.publish("Remote/RAW",Raw.c_str());
+
+      rem_group_act = buf[3];                     //Group 1,2,3,4 All-0
+      if (buf[4]/16) rem_key_hold = true;
+                else rem_key_hold = false;
+      int actComm = buf[4] % 16;                  //AllON-0x05, AllOFF-0x09,
+                                                  //UP-0x0C, DOWN-0x04,
+                                                  //LEFT-0x0E, RIGHT-0x0F,
+                                                  //GR1ON-0x08, GR1OFF-0x0B,
+                                                  //GR2ON-0x0D, GR2OFF-0x03,
+                                                  //GR3ON-0x07, GR3OFF-0x0A,
+                                                  //GR4ON-0x02, GR4OFF-0x06,
       if (actComm == 0x05)
       {
         client.publish("Remote/AllON","1");
