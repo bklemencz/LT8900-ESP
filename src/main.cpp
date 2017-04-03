@@ -93,14 +93,17 @@ void setup_FS(void)
 void callback(char* topic, byte* payload, unsigned int length)
 {
  // FlashLed(2, 500);
-//  TimeOut = atoi((char*)payload);
-//  Serial.print("New TimeOut: ");
-//  Serial.println(TimeOut);
+ //  TimeOut = atoi((char*)payload);
+ //  Serial.print("New TimeOut: ");
+ //  Serial.println(TimeOut);
 }
 
 void setup_wifi()
 {
-  //  Wifi.setHostname("Milight_Gateway");
+  WiFi.softAPdisconnect(true);
+  WiFi.disconnect();
+  WiFi.mode(WIFI_STA);
+  WiFi.hostname("Milight_Gateway_1");
   WiFi.begin(ssid.c_str(), password.c_str());
   while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print("Connecting to: "); Serial.println(ssid.c_str());}
   FlashLed(3, 200);
@@ -203,7 +206,7 @@ void ParseRemoteComm(uint8_t buf[])
     {
 
       String Raw = String(buf[1],HEX) + " " + String(buf[2],HEX) + " " + String(buf[3],HEX) + " " + String(buf[4],HEX) + " " + String(buf[5],HEX);
-      client.publish("Remote/RAW",Raw.c_str());
+      //client.publish("Remote/RAW",Raw.c_str());
 
       rem_group_act = buf[3];                     //Group 1,2,3,4 All-0
       if (buf[4]/16) rem_key_hold = true;
@@ -215,14 +218,356 @@ void ParseRemoteComm(uint8_t buf[])
                                                   //GR2ON-0x0D, GR2OFF-0x03,
                                                   //GR3ON-0x07, GR3OFF-0x0A,
                                                   //GR4ON-0x02, GR4OFF-0x06,
+      // Main ON
       if (actComm == 0x05)
       {
-        client.publish("Remote/AllON","1");
+        client.publish("Remote/Gr0ON","1");
       }
-      if (actComm == 0x09)
+      // Main OFF or All Night mode
+      else if (actComm == 0x09)
       {
-        client.publish("Remote/AllON","0");
+        if (!rem_key_hold)
+        {
+          client.publish("Remote/Gr0ON","0");
+        }
+        else if (rem_key_hold)
+        {
+          client.publish("Remote/Gr0Night","1");
+        }
       }
+      // Group 1 OFF or Night Mode
+      else if (actComm == 0x0B)
+      {
+        if (rem_key_hold)
+        {
+          client.publish("Remote/Gr1Night","1");
+        }
+        else if (!rem_key_hold)
+        {
+          client.publish("Remote/Gr1On","0");
+        }
+      }
+      // Group 1 ON or FULL Power
+      else if (actComm == 0x08)
+      {
+        if (!rem_key_hold)
+        {
+          client.publish("Remote/Gr1On","1");
+        }
+        else if (rem_key_hold)
+        {
+          client.publish("Remote/Gr1Pow","100");
+        }
+      }
+      // Group 2 OFF or Night Mode
+      else if (actComm == 0x03)
+      {
+        if (rem_key_hold)
+        {
+          client.publish("Remote/Gr2Night","1");
+        }
+        else if (!rem_key_hold)
+        {
+          client.publish("Remote/Gr2On","0");
+        }
+      }
+      // Group 2 ON or FULL Power
+      else if (actComm == 0x0D)
+      {
+        if (!rem_key_hold)
+        {
+          client.publish("Remote/Gr2On","1");
+        }
+        else if (rem_key_hold)
+        {
+          client.publish("Remote/Gr2Pow","100");
+        }
+      }
+      // Group 3 OFF or Night Mode
+      else if (actComm == 0x0A)
+      {
+        if (rem_key_hold)
+        {
+          client.publish("Remote/Gr3Night","1");
+        }
+        else if (!rem_key_hold)
+        {
+          client.publish("Remote/Gr3On","0");
+        }
+      }
+      // Group 3 ON or full power
+      else if (actComm == 0x07)
+      {
+        if (!rem_key_hold)
+        {
+          client.publish("Remote/Gr3On","1");
+        }
+        else if (rem_key_hold)
+        {
+          client.publish("Remote/Gr3Pow","100");
+        }
+      }
+      // Group 4 OFF or Night Mode
+      else if (actComm == 0x06)
+      {
+        if (rem_key_hold)
+        {
+          client.publish("Remote/Gr4Night","1");
+        }
+        else if (!rem_key_hold)
+        {
+          client.publish("Remote/Gr4On","0");
+        }
+      }
+      // Group 4 ON or FULL Power
+      else if (actComm == 0x02)
+      {
+        if (!rem_key_hold)
+        {
+          client.publish("Remote/Gr4On","1");
+        }
+        else if (rem_key_hold)
+        {
+          client.publish("Remote/Gr4Pow","100");
+        }
+      }
+      // Power UP for Groups
+      else if (actComm == 0x0C)
+      {
+        if (rem_group_act == 0)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr0Pow","1");
+          }
+          else
+          {
+            client.publish("Remote/Gr0Pow","10");
+          }
+        }
+        else if (rem_group_act == 1)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr1Pow","1");
+          }
+          else
+          {
+            client.publish("Remote/Gr1Pow","10");
+          }
+        }
+        else if (rem_group_act == 2)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr2Pow","1");
+          }
+          else
+          {
+            client.publish("Remote/Gr2Pow","10");
+          }
+        }
+        else if (rem_group_act == 3)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr3Pow","1");
+          }
+          else
+          {
+            client.publish("Remote/Gr3Pow","10");
+          }
+        }
+        else if (rem_group_act == 4)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr4Pow","1");
+          }
+          else
+          {
+            client.publish("Remote/Gr4Pow","10");
+          }
+        }
+      }
+      // Power DOWN for Groups
+      else if (actComm == 0x04)
+      {
+        if (rem_group_act == 0)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr0Pow","-1");
+          }
+          else
+          {
+            client.publish("Remote/Gr0Pow","-10");
+          }
+        }
+        else if (rem_group_act == 1)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr1Pow","-1");
+          }
+          else
+          {
+            client.publish("Remote/Gr1Pow","-10");
+          }
+        }
+        else if (rem_group_act == 2)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr2Pow","-1");
+          }
+          else
+          {
+            client.publish("Remote/Gr2Pow","-10");
+          }
+        }
+        else if (rem_group_act == 3)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr3Pow","-1");
+          }
+          else
+          {
+            client.publish("Remote/Gr3Pow","-10");
+          }
+        }
+        else if (rem_group_act == 4)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr4Pow","-1");
+          }
+          else
+          {
+            client.publish("Remote/Gr4Pow","-10");
+          }
+        }
+      }
+      // CWW to warm for Groups
+      else if (actComm == 0x0E)
+      {
+        if (rem_group_act == 0)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr0CWW","-1");
+          }
+          else
+          {
+            client.publish("Remote/Gr0CWW","-10");
+          }
+        }
+        else if (rem_group_act == 1)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr1CWW","-1");
+          }
+          else
+          {
+            client.publish("Remote/Gr1CWW","-10");
+          }
+        }
+        else if (rem_group_act == 2)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr2CWW","-1");
+          }
+          else
+          {
+            client.publish("Remote/Gr2CWW","-10");
+          }
+        }
+        else if (rem_group_act == 3)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr3CWW","-1");
+          }
+          else
+          {
+            client.publish("Remote/Gr3CWW","-10");
+          }
+        }
+        else if (rem_group_act == 4)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr4CWW","-1");
+          }
+          else
+          {
+            client.publish("Remote/Gr4CWW","-10");
+          }
+        }
+      }
+      // CWW to cold for Groups
+      else if (actComm == 0x0F)
+      {
+        if (rem_group_act == 0)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr0CWW","1");
+          }
+          else
+          {
+            client.publish("Remote/Gr0CWW","10");
+          }
+        }
+        else if (rem_group_act == 1)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr1CWW","1");
+          }
+          else
+          {
+            client.publish("Remote/Gr1CWW","10");
+          }
+        }
+        else if (rem_group_act == 2)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr2CWW","1");
+          }
+          else
+          {
+            client.publish("Remote/Gr2CWW","10");
+          }
+        }
+        else if (rem_group_act == 3)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr3CWW","1");
+          }
+          else
+          {
+            client.publish("Remote/Gr3CWW","10");
+          }
+        }
+        else if (rem_group_act == 4)
+        {
+          if(!rem_key_hold)
+          {
+            client.publish("Remote/Gr4CWW","1");
+          }
+          else
+          {
+            client.publish("Remote/Gr4CWW","10");
+          }
+        }
+      }
+
       client.loop();                // Update MQTT client
     }
   }
